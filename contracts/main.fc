@@ -42,11 +42,11 @@ const min_contract_amount = 500000000;
         ;; if less than 2 TON - send them back
         if (msg_value < min_recv_amount) {
             send_message(msg_value, sender, 1);
-            return();
+            return ();
         }
 
         my_balance += msg_value;
-        return();
+        return ();
     }
 
     if (op == op::admin_withdraw) {
@@ -54,10 +54,8 @@ const min_contract_amount = 500000000;
         var [balance, _] = get_balance();
         throw_unless(100, balance >= min_contract_amount);
         send_message(my_balance - min_contract_amount, admin, 1);
-        return();
+        return ();
     }
-
-
 }
 
 int balance() method_id {
