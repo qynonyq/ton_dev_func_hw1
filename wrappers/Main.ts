@@ -63,7 +63,7 @@ export class Main implements Contract {
     };
 
     async getBalance(provider: ContractProvider): Promise<number> {
-        const res = (await provider.get('balance', [])).stack;
+        const res = (await provider.get('read_balance', [])).stack;
         return res.readNumber();
     }
 }

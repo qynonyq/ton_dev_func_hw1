@@ -1,12 +1,15 @@
 #include "imports/stdlib.fc";
 
+;; storage
 global slice admin;
 
-const op::accept_funds = 0xa4d8086f;
-const op::admin_withdraw = 0x217e5898;
+;; constants
+int min_balance_amount() asm "500000000 PUSHINT"; ;; 0.5 TON
+int min_recv_amount() asm "2000000000 PUSHINT"; ;; 2 TON
 
-const min_recv_amount = 2000000000;
-const min_contract_amount = 500000000;
+;; opcodes
+int op::accept_funds() asm "0xa4d8086f PUSHINT";
+int op::admin_withdraw() asm "0x217e5898 PUSHINT";
 
 () load_data() impure inline {
     slice ds = get_data().begin_parse();
@@ -14,7 +17,7 @@ const min_contract_amount = 500000000;
     ds.end_parse();
 }
 
-() send_message(int amount, slice to, int mode) impure inline_ref {
+() send_message(int amount, slice to, int mode) impure inline {
     cell msg = begin_cell()
         .store_uint(0x18, 6)
         .store_slice(to)
@@ -22,6 +25,11 @@ const min_contract_amount = 500000000;
         .store_uint(0, 107)
         .end_cell();
     send_raw_message(msg, mode);
+}
+
+int balance() {
+    var [balance, _] = get_balance();
+    return balance;
 }
 
 () recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
@@ -38,9 +46,9 @@ const min_contract_amount = 500000000;
     int op = in_msg_body~load_uint(32);
     load_data();
 
-    if (op == op::accept_funds) {
+    if (op == op::accept_funds()) {
         ;; if less than 2 TON - send them back
-        if (msg_value < min_recv_amount) {
+        if (msg_value < min_recv_amount()) {
             send_message(msg_value, sender, 1);
             return ();
         }
@@ -49,16 +57,14 @@ const min_contract_amount = 500000000;
         return ();
     }
 
-    if (op == op::admin_withdraw) {
+    if (op == op::admin_withdraw()) {
         throw_unless(101, equal_slices(sender, admin));
-        var [balance, _] = get_balance();
-        throw_unless(100, balance >= min_contract_amount);
-        send_message(my_balance - min_contract_amount, admin, 1);
+        throw_unless(100, balance() >= min_balance_amount());
+        send_message(my_balance - min_balance_amount(), admin, 1);
         return ();
     }
 }
 
-int balance() method_id {
-    var [balance, _] = get_balance();
-    return balance;
+int read_balance() method_id {
+    return balance();
 }
